@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Operasi Aritmetika</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+  </head>
+  <body>
+    <!-- Latar belakang animasi (gaya Aurora) -->
+    <div class="aurora" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+
+    <!-- Kanvas untuk efek percikan saat klik (gaya Click Spark) -->
+    <canvas id="spark-canvas" aria-hidden="true"></canvas>
+
+    <main class="container">
+      <header class="hero">
+        <h1 class="shiny-text">Operasi Aritmetika</h1>
+        <p>Hitung, simpan, ubah, dan hapus data operasi (+ − × ÷)</p>
+      </header>
+
+      <!-- Pesan sukses -->
+      <div class="toast" th:if="${pesan}" th:text="${pesan}">Berhasil</div>
+
+      <!-- ===================== FORM ===================== -->
+      <section class="card spotlight">
+        <h2
+          th:text="${operasi.id == null ? 'Tambah Operasi' : 'Edit Operasi #' + operasi.id}"
+        >
+          Tambah Operasi
+        </h2>
+
+        <form
+          th:action="@{/simpan}"
+          th:object="${operasi}"
+          method="post"
+          class="calc-form"
+        >
+          <input type="hidden" th:field="*{id}" />
+
+          <div class="row">
+            <!-- 1. Bilangan 1 -->
+            <div class="field">
+              <label for="bilangan1">Bilangan 1</label>
+              <input
+                type="text"
+                th:field="*{bilangan1}"
+                placeholder="contoh: 12"
+                autocomplete="off"
+                inputmode="decimal"
+              />
+              <small
+                class="error"
+                th:if="${#fields.hasErrors('bilangan1')}"
+                th:errors="*{bilangan1}"
+              ></small>
+            </div>
+
+            <!-- 2. Operator -->
+            <div class="field">
+              <label for="operator">Operator</label>
+              <select th:field="*{operator}">
+                <option value="+">+ (tambah)</option>
+                <option value="-">- (kurang)</option>
+                <option value="*">* (kali)</option>
+                <option value="/">/ (bagi)</option>
+              </select>
+              <small
+                class="error"
+                th:if="${#fields.hasErrors('operator')}"
+                th:errors="*{operator}"
+              ></small>
+            </div>
+
+            <!-- 3. Bilangan 2 -->
+            <div class="field">
+              <label for="bilangan2">Bilangan 2</label>
+              <input
+                type="text"
+                th:field="*{bilangan2}"
+                placeholder="contoh: 3"
+                autocomplete="off"
+                inputmode="decimal"
+              />
+              <small
+                class="error"
+                th:if="${#fields.hasErrors('bilangan2')}"
+                th:errors="*{bilangan2}"
+              ></small>
+            </div>
+
+            <!-- 4. Hasil (hanya tampilan, tidak dikirim ke server) -->
+            <div class="field">
+              <label for="hasil">Hasil</label>
+              <input
+                type="text"
+                id="hasil"
+                readonly
+                tabindex="-1"
+                placeholder="otomatis"
+              />
+            </div>
+          </div>
+
+          <div class="actions">
+            <!-- Tombol gaya Star Border -->
+            <button type="submit" class="star-border">
+              <span class="star-bottom"></span>
+              <span class="star-top"></span>
+              <span
+                class="star-inner"
+                th:text="${operasi.id == null ? 'Simpan' : 'Simpan Perubahan'}"
+                >Simpan</span
+              >
+            </button>
+
+            <a
+              class="btn btn-ghost"
+              th:if="${operasi.id != null}"
+              th:href="@{/}"
+              >Batal</a
+            >
+          </div>
+        </form>
+      </section>
+
+      <!-- ===================== TABEL DATA ===================== -->
+      <section class="card spotlight">
+        <h2>
+          Riwayat Operasi
+          <span class="badge" th:text="${#lists.size(daftar)}">0</span>
+        </h2>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Bilangan 1</th>
+                <th>Operator</th>
+                <th>Bilangan 2</th>
+                <th>Hasil</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                class="row-anim"
+                th:each="o, iter : ${daftar}"
+                th:style="'--i:' + ${iter.index}"
+              >
+                <td th:text="${iter.count}">1</td>
+                <td class="angka" th:text="${o.bilangan1}">0</td>
+                <td><span class="op-chip" th:text="${o.operator}">+</span></td>
+                <td class="angka" th:text="${o.bilangan2}">0</td>
+                <!-- Hasil dihitung di halaman (lihat app.js), tidak disimpan di database -->
+                <td
+                  class="hasil"
+                  th:attr="data-a=${o.bilangan1},data-op=${o.operator},data-b=${o.bilangan2}"
+                ></td>
+                <td>
+                  <div class="aksi-wrap">
+                    <a class="btn btn-edit" th:href="@{/edit/{id}(id=${o.id})}"
+                      >Edit</a
+                    >
+                    <form
+                      th:action="@{/hapus/{id}(id=${o.id})}"
+                      method="post"
+                      onsubmit="
+                        return confirm('Yakin mau menghapus data ini?');
+                      "
+                    >
+                      <button type="submit" class="btn btn-hapus">Hapus</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+
+              <tr th:if="${#lists.isEmpty(daftar)}">
+                <td colspan="6" class="empty">
+                  Belum ada data. Coba tambahkan operasi pertamamu!
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script th:src="@{/js/app.js}"></script>
+  </body>
+</html>
